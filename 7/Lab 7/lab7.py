@@ -1,6 +1,7 @@
 from typing import Type
 
 FlightInformation = tuple[str, str, float]
+ORIG = 0
 
 
 def swap(input_list: list[any], swap_index_a: int, swap_index_b: int) -> None:
@@ -110,7 +111,7 @@ def get_destinations_from(flight_list: list[FlightInformation], departure_city: 
     city_list = []
 
     for information in flight_list:
-        if (information[0] == departure_city) and (information[1] not in city_list):
+        if (information[ORIG  ] == departure_city) and (information[1] not in city_list):
             city_list.append(information[1])
 
     return city_list
