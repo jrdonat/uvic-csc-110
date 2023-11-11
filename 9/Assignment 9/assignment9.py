@@ -264,7 +264,7 @@ def query(filename: str, category: str, date: Date, actors: list[str]
      id_title_dict) = read_file(filename)
 
     ids_matching_category = category_id_dict[category] if category in category_id_dict else []
-    ids_with_actor = get_ids_with_actor(id_actor_dict, actors) if actors else list(id_actor_dict.keys())
+    ids_with_actor = get_ids_with_actor(id_actor_dict, actors) if actors else list(id_title_dict.keys())
     ids_before_date = get_shows_before_date(id_date_dict, date)
 
     matching_ids = shared_items(ids_matching_category, ids_before_date, ids_with_actor)
