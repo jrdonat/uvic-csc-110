@@ -48,7 +48,9 @@ def read_file(filename: str) -> (dict[str, Date],
     Precondition: file is csv with data in expected columns 
         and contains a header row with column titles
         Show ids within the file are unique.
-        
+
+    Examples :
+
     >>> read_file('0lines_data.csv')
     ({}, {}, {}, {})
     
@@ -140,11 +142,35 @@ def read_file(filename: str) -> (dict[str, Date],
       '80187722': 'FIGHTWORLD',
       '70213237': "Monty Python's Almost the Truth",
       '70121522': '3 Idiots'})
+
+
     """
-    # TODO: complete this function according to the documentation
-    # Important: DO NOT delete the header row from the csv file,
-    # your function should read the header line and ignore it (do nothing with it)
-    # All files we test your function with will have this header row!
+    id_date_dict = {}
+    id_actor_dict = {}
+    category_id_dict = {}
+    id_title_dict = {}
+
+    file = open(filename, "rt", encoding="utf8")
+    file.readline()  # ignore header row
+    lines = file.readlines()
+
+    for line in lines:
+        line = line.split(",")
+
+        date = create_date(line[INPUT_DATE])
+        actor_list = line[INPUT_CAST].split(":")
+        category_list = line[INPUT_CATEGORIES].split(":")
+        show_id = line[INPUT_SID]
+
+        id_date_dict[show_id] = date
+
+        if actor_list[0]:
+            id_actor_dict[show_id] = uniques_only(actor_list)
+
+        file_into_category_dict(category_list, show_id, category_id_dict)
+        id_title_dict[show_id] = line[INPUT_TITLE]
+
+    return id_date_dict, id_actor_dict, category_id_dict, id_title_dict
 
 
 def query(filename: str, category: str, date: Date, actors: list[str]
@@ -164,7 +190,8 @@ def query(filename: str, category: str, date: Date, actors: list[str]
     You MUST call read_file and use look ups in the returned dictionaries 
     to help solve this problem in order to receive marks.
     You can and should design additional helper functions to solve this problem.
-    
+    {
+
     >>> query('0lines_data.csv', 'Comedies', (2019, 9, 5), ['Aamir Khan'])
     []
     
@@ -228,5 +255,159 @@ def query(filename: str, category: str, date: Date, actors: list[str]
      ('Rang De Basanti', '70047320'), ('Secret Superstar', '80245408'), 
      ('Shutter', '70062814'), ('Taare Zameen Par', '70087087'),
      ('Talaash', '70262614'), ('Zed Plus', '81213884')]
+
+     }
     """
-    # TODO: complete this function according to the documentation
+    (id_date_dict,
+     id_actor_dict,
+     category_id_dict,
+     id_title_dict) = read_file(filename)
+
+    ids_matching_category = category_id_dict[category] if category in category_id_dict else []
+    ids_with_actor = get_ids_with_actor(id_actor_dict, actors) if actors else list(id_actor_dict.keys())
+    ids_before_date = get_shows_before_date(id_date_dict, date)
+
+    matching_ids = shared_items(ids_matching_category, ids_before_date, ids_with_actor)
+
+    return get_show_name_id_list(matching_ids, id_title_dict)
+
+
+####################################################################################################################
+#                                               HELPER FUNCTIONS                                                   #
+####################################################################################################################
+
+
+def get_ids_with_actor(id_actor_dict: dict, actors: list):
+    id_list = []
+
+    for actor in actors:
+        for id_number, actor_list in id_actor_dict.items():
+            if actor in actor_list:
+                id_list.append(id_number)
+
+    return id_list
+
+
+def get_shows_before_date(id_date_dict, test_date: Date):
+    id_list = []
+
+    for id_number, date in id_date_dict.items():
+        if date_is_after(test_date, date):
+            id_list.append(id_number)
+
+    return id_list
+
+
+def shared_items(ids_matching_category, ids_before_date, ids_with_actor):
+    output_list = []
+
+    for item in ids_matching_category:
+        if item in ids_before_date and item in ids_with_actor:
+            output_list.append(item)
+
+    return output_list
+
+
+def get_show_name_id_list(matching_ids, id_title_dict) -> list[tuple[str,    # title
+                                                                     str]]:  # id
+    output_list = []
+
+    for id_number in matching_ids:
+        output_list.append((str(id_title_dict[id_number]), str(id_number)))
+
+    output_list.sort(key=lambda t: t[0])
+
+    return output_list
+
+
+def file_into_category_dict(category_list, show_id, category_id_dict):
+    """
+    Return a dictionary of categories and show ids.
+
+    :param category_list: List of categories
+    :param show_id: Show id
+    :param category_id_dict: Dictionary of categories and show ids
+    :return: Dictionary of categories and show ids
+    """
+    for category in category_list:
+        if not (category in category_id_dict):
+            category_id_dict[category] = [show_id]
+        else:
+            category_id_dict[category].append(show_id)
+
+
+def uniques_only(input_list) -> list:
+    found_items = []
+
+    for item in input_list:
+        if item not in found_items:
+            found_items.append(item)
+
+    return found_items
+
+
+def convert_month(month_string: str) -> int:
+    """
+    Return the number of the month as an int.
+
+    :param month_string: String of the month
+    :return: Int of the month
+    """
+    month_dict = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+                  "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
+
+    return month_dict[month_string]
+
+
+def date_is_after(date_a: Date, date_b: Date):
+    """
+    Return True if date_a is after date_b, False otherwise.
+
+    Example:
+    >>> date_is_after((2019, 7, 2), (2019, 7, 1))
+    True
+    >>> date_is_after((2019, 7, 1), (2019, 7, 2))
+    False
+    >>> date_is_after((9999, 7, 1), (2019, 6, 30))
+    True
+
+    :param date_a: check if this date is after date_b
+    :param date_b: check if date_a is after this date
+    :return: returns True if date_a is after date_b, False otherwise.
+    """
+    if date_a[0] == date_b[0]:  # if year is equal
+        if date_a[1] == date_b[1]:  # check if month is equal
+            if date_a[2] > date_b[2]:  # compare days
+                return True
+        elif date_a[1] > date_b[1]:  # month is not equal check if month is older
+            return True
+    elif date_a > date_b:  # year is not equal check if year is older
+        return True
+
+    return False
+
+
+def create_date(input_string: str) -> Date:
+    """
+    Return a Date tuple from a string in the format 'day-month-year'.
+
+    Examples:
+    >>> create_date('1-Jul-19')
+    (2019, 7, 1)
+    >>> create_date('12-Dec-19')
+    (2019, 12, 12)
+    >>> create_date('31-Dec-19')
+    (2019, 12, 31)
+    >>> create_date('1-Jan-20')
+    (2020, 1, 1)
+    >>> create_date('1-Jan-21')
+    (2021, 1, 1)
+
+    :returns: returns a tuple in the format
+    """
+    date_list = input_string.split("-")
+    year = int('20' + str(date_list[2]))
+    month = int(convert_month((date_list[1])))
+    day = int(date_list[0])
+
+    return year, month, day
