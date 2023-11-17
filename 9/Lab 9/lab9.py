@@ -264,15 +264,9 @@ def population_analysis(filename: str, country: str, granularity: int
     if country not in country_population_dict:
         return []
 
-    population_granularity = country_population_dict[country] // granularity
-    countries_in_population_granularity = population_granularity_dict[population_granularity]
-
-    for country in countries_in_population_granularity:
-        output_list.append((country_population_dict[country], country))
-
-    output_list.sort()
-
-    return output_list
+    # A funny little one-line solution because less code means better right? ... Right?
+    return sorted([(country_population_dict[country], country) for country in population_granularity_dict[country_population_dict[country] // granularity]])
+    
 
 
 def is_even(number: int) -> bool:
